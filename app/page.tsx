@@ -106,6 +106,13 @@ export default function AVRedundancyDashboard() {
     setIsInitialized(true)
   }, [])
 
+  // Manually sync theme class to <html> — next-themes doesn't do this reliably in dev mode
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.remove('dark', 'light')
+    if (theme) root.classList.add(theme)
+  }, [theme])
+
   // Save to localStorage whenever config changes (debounced)
   useEffect(() => {
     if (!isInitialized) return
