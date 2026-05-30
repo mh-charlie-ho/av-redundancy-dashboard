@@ -174,11 +174,18 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
     return { x: worldX, y: worldY }
   }, [centerX, centerY, ppm, pan])
 
-  // Handle wheel for zoom
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault()
-    const delta = e.deltaY > 0 ? 0.9 : 1.1
-    setZoom(prev => Math.max(0.2, Math.min(5, prev * delta)))
+  // Handle wheel for zoom — must use native addEventListener with passive:false
+  // because React's onWheel registers a passive listener and cannot call preventDefault()
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const delta = e.deltaY > 0 ? 0.9 : 1.1
+      setZoom(prev => Math.max(0.2, Math.min(5, prev * delta)))
+    }
+    container.addEventListener('wheel', onWheel, { passive: false })
+    return () => container.removeEventListener('wheel', onWheel)
   }, [])
 
   // Handle pan
@@ -668,7 +675,6 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
         viewBox={`0 0 ${width} ${height}`}
         className="w-full h-full"
         style={{ touchAction: 'none' }}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onClick={handleBackgroundClick}
       >
