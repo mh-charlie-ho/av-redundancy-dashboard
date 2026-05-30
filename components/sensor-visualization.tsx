@@ -884,23 +884,6 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
           </text>
         </g>
 
-        {/* Instructions */}
-        <g transform="translate(20, 20)">
-          <rect
-            x={0}
-            y={0}
-            width={200}
-            height={48}
-            rx={4}
-            style={{ fill: c.overlayBg }}
-          />
-          <text x={10} y={18} style={{ fill: c.overlayText }} fontSize={10} className="select-none pointer-events-none">
-            Scroll: Zoom | Shift+Drag: Pan
-          </text>
-          <text x={10} y={36} style={{ fill: c.overlayText }} fontSize={10} className="select-none pointer-events-none">
-            Click sensor/car: Edit | Drag: Move
-          </text>
-        </g>
       </svg>
     </div>
   )

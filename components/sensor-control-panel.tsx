@@ -8,7 +8,7 @@ import { NumericInput } from '@/components/numeric-input'
 import type { Sensor, SensorStatus, CarDimensions, CarOffset, SelectionType, SensorDisplayOptions } from '@/lib/sensor-config'
 import { createNewSensor, defaultCarOffset } from '@/lib/sensor-config'
 import { cn } from '@/lib/utils'
-import { Plus, Trash2, ChevronDown, ChevronUp, RotateCcw, Crosshair, Car, Eye, EyeOff, GripVertical, X } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronUp, RotateCcw, Crosshair, Car, Eye, EyeOff, GripVertical } from 'lucide-react'
 import type { ViewState } from './sensor-visualization'
 
 // dnd-kit imports
@@ -60,7 +60,6 @@ interface SensorControlPanelProps {
   onSensorsReorder: (sensors: Sensor[]) => void
   maxRange: number
   onMaxRangeChange: (value: number) => void
-  onClose?: () => void
 }
 
 function getSensorTypeInfo(type: Sensor['type']) {
@@ -358,7 +357,6 @@ export function SensorControlPanel({
   onSensorsReorder,
   maxRange,
   onMaxRangeChange,
-  onClose,
 }: SensorControlPanelProps) {
   // Ensure carOffset has values (fallback for old localStorage data)
   const safeCarOffset = carOffset?.x !== undefined ? carOffset : defaultCarOffset
@@ -448,16 +446,7 @@ export function SensorControlPanel({
   }
 
   return (
-    <div className="flex flex-col gap-3 h-full overflow-y-auto pr-1">
-      {/* Close button — only shown inside mobile drawer */}
-      {onClose && (
-        <div className="flex items-center justify-between lg:hidden">
-          <span className="text-sm font-semibold text-foreground">Settings</span>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close settings">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+    <div className="flex flex-col gap-3 h-full">
       {/* View Controls */}
       <div className="rounded-lg border border-border bg-card p-3">
         <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">

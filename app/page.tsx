@@ -15,7 +15,7 @@ import {
   type SelectionType,
 } from '@/lib/sensor-config'
 import { Button } from '@/components/ui/button'
-import { Download, Upload, Loader2, RotateCcw, Sun, Moon, Settings } from 'lucide-react'
+import { Download, Upload, Loader2, RotateCcw, Sun, Moon, Menu, X } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
 // Global display settings type
@@ -310,178 +310,184 @@ export default function AVRedundancyDashboard() {
     )
   }
 
+  const sensorControlProps = {
+    sensors,
+    sensorStatus,
+    selection,
+    carDimensions,
+    carOffset,
+    viewState,
+    globalDisplay,
+    onToggle: handleToggle,
+    onCarDimensionsChange: setCarDimensions,
+    onCarOffsetChange: setCarOffset,
+    onSensorUpdate: handleSensorUpdate,
+    onSensorAdd: handleSensorAdd,
+    onSensorDelete: handleSensorDelete,
+    onDeleteAllSensors: handleDeleteAllSensors,
+    onSelectionChange: handleSelectionChange,
+    onResetView: handleResetView,
+    onCenterView: handleCenterView,
+    onGlobalDisplayChange: handleGlobalDisplayChange,
+    onSensorsReorder: handleSensorsReorder,
+    maxRange,
+    onMaxRangeChange: setMaxRange,
+  }
+
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <header className="flex-shrink-0 px-4 py-3 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-foreground">
-              AV Redundancy Dashboard
-            </h1>
-            <p className="text-xs text-muted-foreground">
+            <h1 className="text-xl font-bold text-foreground">AV Redundancy Dashboard</h1>
+            <p className="text-xs text-muted-foreground hidden sm:block">
               Interactive sensor coverage visualization
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            {/* Import/Export/Reset buttons */}
-            <div className="flex items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                className="hidden"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                className="text-xs hidden sm:flex"
-              >
-                <Upload className="h-3.5 w-3.5 mr-1.5" />
-                Import
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                className="text-xs hidden sm:flex"
-              >
-                <Download className="h-3.5 w-3.5 mr-1.5" />
-                Export
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleResetToDefault}
-                className="text-xs hidden sm:flex"
-              >
-                <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                Reset
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="text-xs"
-                aria-label="Toggle theme"
-              >
-                {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-              </Button>
-              {/* Settings button — only visible on small screens */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsSettingsOpen(true)}
-                className="text-xs lg:hidden"
-                aria-label="Open settings"
-              >
-                <Settings className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+          <div className="flex items-center gap-2">
+            {/* Import/Export/Reset — desktop only */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="text-xs hidden lg:flex"
+            >
+              <Upload className="h-3.5 w-3.5 mr-1.5" />
+              Import
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="text-xs hidden lg:flex"
+            >
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              Export
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetToDefault}
+              className="text-xs hidden lg:flex"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+              Reset
+            </Button>
 
-            {/* System status */}
-            <div className="hidden sm:flex items-center gap-3 pl-4 border-l border-border">
+            {/* System status — desktop only */}
+            <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-border">
               <span className="text-sm text-muted-foreground">System:</span>
-              <span className={`text-lg font-bold ${getStatusColor()}`}>
+              <span className={`text-base font-bold ${getStatusColor()}`}>
                 {ratio >= 0.8 ? 'NORMAL' : ratio >= 0.4 ? 'DEGRADED' : 'CRITICAL'}
               </span>
             </div>
+
+            {/* Theme toggle — always visible */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+            </Button>
+
+            {/* Hamburger — mobile only */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsSettingsOpen(true)}
+              className="lg:hidden"
+              aria-label="Open settings"
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </header>
 
-      {/* Main Content - Horizontal Layout */}
+      {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Visualization Area */}
-        <div className="flex-1 p-4">
-          <div className="w-full h-full rounded-xl border border-border overflow-hidden">
-            <SensorVisualization
-              ref={visualizationRef}
-              sensors={sensors}
-              sensorStatus={sensorStatus}
-              carDimensions={carDimensions}
-              carOffset={carOffset}
-              globalDisplay={globalDisplay}
-              initialViewState={savedViewState || undefined}
-              onSensorDrag={handleSensorDrag}
-              onSelectionChange={handleSelectionChange}
-              selection={selection}
-              onViewStateChange={handleViewStateChange}
-              colorScheme={theme === 'light' ? 'light' : 'dark'}
-              maxRange={maxRange}
-            />
+        {/* Visualization Area — edge-to-edge on mobile, padded on desktop */}
+        <div className="flex-1 relative overflow-hidden">
+          <div className="w-full h-full lg:p-4">
+            <div className="w-full h-full lg:rounded-xl lg:border lg:border-border overflow-hidden">
+              <SensorVisualization
+                ref={visualizationRef}
+                sensors={sensors}
+                sensorStatus={sensorStatus}
+                carDimensions={carDimensions}
+                carOffset={carOffset}
+                globalDisplay={globalDisplay}
+                initialViewState={savedViewState || undefined}
+                onSensorDrag={handleSensorDrag}
+                onSelectionChange={handleSelectionChange}
+                selection={selection}
+                onViewStateChange={handleViewStateChange}
+                colorScheme={theme === 'light' ? 'light' : 'dark'}
+                maxRange={maxRange}
+              />
+            </div>
+          </div>
+
+          {/* System status badge — mobile only, overlaid on canvas */}
+          <div className="absolute top-3 right-3 z-10 lg:hidden">
+            <span className={`bg-background/80 backdrop-blur-sm rounded-md px-2 py-1 text-xs font-bold ${getStatusColor()}`}>
+              {ratio >= 0.8 ? 'NORMAL' : ratio >= 0.4 ? 'DEGRADED' : 'CRITICAL'}
+            </span>
           </div>
         </div>
 
-        {/* Control Panel - desktop: static sidebar, mobile: hidden */}
+        {/* Desktop sidebar */}
         <div className="hidden lg:flex w-80 flex-shrink-0 border-l border-border p-4 bg-card/50 overflow-hidden">
-          <SensorControlPanel
-            sensors={sensors}
-            sensorStatus={sensorStatus}
-            selection={selection}
-            carDimensions={carDimensions}
-            carOffset={carOffset}
-            viewState={viewState}
-            globalDisplay={globalDisplay}
-            onToggle={handleToggle}
-            onCarDimensionsChange={setCarDimensions}
-            onCarOffsetChange={setCarOffset}
-            onSensorUpdate={handleSensorUpdate}
-            onSensorAdd={handleSensorAdd}
-            onSensorDelete={handleSensorDelete}
-            onDeleteAllSensors={handleDeleteAllSensors}
-            onSelectionChange={handleSelectionChange}
-            onResetView={handleResetView}
-            onCenterView={handleCenterView}
-            onGlobalDisplayChange={handleGlobalDisplayChange}
-            onSensorsReorder={handleSensorsReorder}
-            maxRange={maxRange}
-            onMaxRangeChange={setMaxRange}
-          />
+          <SensorControlPanel {...sensorControlProps} />
         </div>
       </div>
 
-      {/* Mobile drawer backdrop */}
-      {isSettingsOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={() => setIsSettingsOpen(false)}
-        />
-      )}
-
-      {/* Mobile settings drawer */}
+      {/* Mobile full-screen settings overlay */}
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-80 flex flex-col border-l border-border bg-card/95 backdrop-blur-sm transition-transform duration-300 lg:hidden ${
+        className={`fixed inset-0 z-50 flex flex-col bg-background transition-transform duration-300 lg:hidden ${
           isSettingsOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex-1 flex flex-col p-4 overflow-hidden">
-          <SensorControlPanel
-            sensors={sensors}
-            sensorStatus={sensorStatus}
-            selection={selection}
-            carDimensions={carDimensions}
-            carOffset={carOffset}
-            viewState={viewState}
-            globalDisplay={globalDisplay}
-            onToggle={handleToggle}
-            onCarDimensionsChange={setCarDimensions}
-            onCarOffsetChange={setCarOffset}
-            onSensorUpdate={handleSensorUpdate}
-            onSensorAdd={handleSensorAdd}
-            onSensorDelete={handleSensorDelete}
-            onDeleteAllSensors={handleDeleteAllSensors}
-            onSelectionChange={handleSelectionChange}
-            onResetView={handleResetView}
-            onCenterView={handleCenterView}
-            onGlobalDisplayChange={handleGlobalDisplayChange}
-            onSensorsReorder={handleSensorsReorder}
-            maxRange={maxRange}
-            onMaxRangeChange={setMaxRange}
-            onClose={() => setIsSettingsOpen(false)}
-          />
+        {/* Overlay header */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-border">
+          <span className="font-semibold text-foreground">Settings</span>
+          <Button variant="ghost" size="sm" onClick={() => setIsSettingsOpen(false)} aria-label="Close settings">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Actions bar: Import / Export / Reset / System status */}
+        <div className="flex-shrink-0 flex items-center flex-wrap gap-2 px-4 py-2 border-b border-border">
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="text-xs">
+            <Upload className="h-3.5 w-3.5 mr-1.5" />
+            Import
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} className="text-xs">
+            <Download className="h-3.5 w-3.5 mr-1.5" />
+            Export
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleResetToDefault} className="text-xs">
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+            Reset
+          </Button>
+          <span className={`ml-auto text-sm font-bold ${getStatusColor()}`}>
+            {ratio >= 0.8 ? 'NORMAL' : ratio >= 0.4 ? 'DEGRADED' : 'CRITICAL'}
+          </span>
+        </div>
+
+        {/* Sensor control panel (overflow-hidden so inner h-full + flex-1 work correctly) */}
+        <div className="flex-1 overflow-hidden">
+          <SensorControlPanel {...sensorControlProps} />
         </div>
       </div>
     </div>
