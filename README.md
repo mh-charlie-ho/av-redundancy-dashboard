@@ -50,31 +50,3 @@ Open the app at:
 ```text
 http://localhost:3000
 ```
-
-## Configuration Data
-
-Dashboard state is saved automatically in the browser under the key:
-
-```text
-av-dashboard-config
-```
-
-The exported JSON includes:
-
-- Sensors and sensor active status
-- Vehicle dimensions
-- Car model offset from baselink
-- Global display settings
-- View state
-- Ring max range
-- Save timestamp
-
-## Coordinate System
-
-Sensor and vehicle positions are defined relative to `baselink` at `(0, 0)`.
-
-- `+X` points forward.
-- `+Y` points left.
-- `yaw = 0` faces forward.
-- `yaw = 90` faces left.
-- `yaw = -90` faces right.
