@@ -15,7 +15,8 @@ import {
   type SelectionType,
 } from '@/lib/sensor-config'
 import { Button } from '@/components/ui/button'
-import { Download, Upload, Loader2, RotateCcw } from 'lucide-react'
+import { Download, Upload, Loader2, RotateCcw, Sun, Moon } from 'lucide-react'
+import { useTheme } from 'next-themes'
 
 // Global display settings type
 interface GlobalDisplaySettings {
@@ -43,6 +44,7 @@ interface SavedConfig {
   carOffset: CarOffset
   globalDisplay: GlobalDisplaySettings
   viewState?: ViewState
+  maxRange?: number
   savedAt: string
 }
 
@@ -80,6 +82,9 @@ export default function AVRedundancyDashboard() {
   const [viewState, setViewState] = useState<ViewState | null>(null)
   const [savedViewState, setSavedViewState] = useState<ViewState | null>(null)
   const [globalDisplay, setGlobalDisplay] = useState<GlobalDisplaySettings>(defaultGlobalDisplay)
+  const [maxRange, setMaxRange] = useState(150)
+
+  const { theme, setTheme } = useTheme()
 
   const visualizationRef = useRef<SensorVisualizationHandle>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -96,6 +101,7 @@ export default function AVRedundancyDashboard() {
       }
       if (savedConfig.globalDisplay) setGlobalDisplay(savedConfig.globalDisplay)
       if (savedConfig.viewState) setSavedViewState(savedConfig.viewState)
+      if (savedConfig.maxRange) setMaxRange(savedConfig.maxRange)
     }
     setIsInitialized(true)
   }, [])
@@ -112,12 +118,13 @@ export default function AVRedundancyDashboard() {
         carOffset,
         globalDisplay,
         viewState: viewState || undefined,
+        maxRange,
         savedAt: new Date().toISOString(),
       })
     }, 500) // Debounce 500ms
 
     return () => clearTimeout(timeoutId)
-  }, [sensors, sensorStatus, carDimensions, carOffset, globalDisplay, viewState, isInitialized])
+  }, [sensors, sensorStatus, carDimensions, carOffset, globalDisplay, viewState, maxRange, isInitialized])
 
   // Export config to JSON file
   const handleExport = useCallback(() => {
@@ -128,6 +135,7 @@ export default function AVRedundancyDashboard() {
       carOffset,
       globalDisplay,
       viewState: viewState || undefined,
+      maxRange,
       savedAt: new Date().toISOString(),
     }
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' })
@@ -157,6 +165,7 @@ export default function AVRedundancyDashboard() {
           setCarOffset(config.carOffset)
         }
         if (config.globalDisplay) setGlobalDisplay(config.globalDisplay)
+        if (config.maxRange) setMaxRange(config.maxRange)
         if (config.viewState) {
           setSavedViewState(config.viewState)
           setTimeout(() => {
@@ -245,6 +254,7 @@ export default function AVRedundancyDashboard() {
     setCarDimensions(defaultCarDimensions)
     setCarOffset(defaultCarOffset)
     setGlobalDisplay(defaultGlobalDisplay)
+    setMaxRange(150)
     setSelection(null)
     visualizationRef.current?.resetView()
   }, [])
@@ -342,6 +352,15 @@ export default function AVRedundancyDashboard() {
                 <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
                 Reset
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="text-xs"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              </Button>
             </div>
             
             {/* System status */}
@@ -357,9 +376,9 @@ export default function AVRedundancyDashboard() {
 
       {/* Main Content - Horizontal Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Visualization Area - Takes most space */}
+        {/* Visualization Area - always dark regardless of theme */}
         <div className="flex-1 p-4">
-          <div className="w-full h-full rounded-xl border border-border bg-card overflow-hidden">
+          <div className="w-full h-full rounded-xl border border-border overflow-hidden">
             <SensorVisualization
               ref={visualizationRef}
               sensors={sensors}
@@ -372,6 +391,8 @@ export default function AVRedundancyDashboard() {
               onSelectionChange={handleSelectionChange}
               selection={selection}
               onViewStateChange={handleViewStateChange}
+              colorScheme={theme === 'light' ? 'light' : 'dark'}
+              maxRange={maxRange}
             />
           </div>
         </div>
@@ -398,6 +419,8 @@ export default function AVRedundancyDashboard() {
             onCenterView={handleCenterView}
             onGlobalDisplayChange={handleGlobalDisplayChange}
             onSensorsReorder={handleSensorsReorder}
+            maxRange={maxRange}
+            onMaxRangeChange={setMaxRange}
           />
         </div>
       </div>

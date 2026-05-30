@@ -58,6 +58,8 @@ interface SensorControlPanelProps {
   onCenterView: () => void
   onGlobalDisplayChange: (settings: GlobalDisplaySettings) => void
   onSensorsReorder: (sensors: Sensor[]) => void
+  maxRange: number
+  onMaxRangeChange: (value: number) => void
 }
 
 function getSensorTypeInfo(type: Sensor['type']) {
@@ -353,6 +355,8 @@ export function SensorControlPanel({
   onCenterView,
   onGlobalDisplayChange,
   onSensorsReorder,
+  maxRange,
+  onMaxRangeChange,
 }: SensorControlPanelProps) {
   // Ensure carOffset has values (fallback for old localStorage data)
   const safeCarOffset = carOffset?.x !== undefined ? carOffset : defaultCarOffset
@@ -484,6 +488,19 @@ export function SensorControlPanel({
             </div>
           </div>
         )}
+        <div className="mt-2 bg-background/50 rounded p-2">
+          <div className="text-[10px] text-muted-foreground mb-1">Ring Max Range</div>
+          <div className="flex items-center gap-1">
+            <NumericInput
+              value={maxRange}
+              onChange={(val) => onMaxRangeChange(Math.max(25, Math.round(val / 25) * 25))}
+              allowNegative={false}
+              decimals={0}
+            />
+            <span className="text-xs text-muted-foreground">m</span>
+          </div>
+          <div className="text-[9px] text-muted-foreground mt-1">25m interval, min 25m</div>
+        </div>
       </div>
 
       {/* System Status */}

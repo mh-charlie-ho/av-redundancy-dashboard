@@ -4,6 +4,40 @@ import { useMemo, useCallback, useState, useRef, useEffect, forwardRef, useImper
 import type { Sensor, SensorStatus, CarDimensions, CarOffset, SelectionType } from '@/lib/sensor-config'
 import { defaultCarDimensions, defaultCarOffset } from '@/lib/sensor-config'
 
+const LIGHT_COLORS = {
+  bg: '#e8eaed',
+  gridMinor: 'rgba(0,0,0,0.12)',
+  gridMajor: 'rgba(0,0,0,0.20)',
+  ring: 'rgba(0,0,0,0.22)',
+  ringText: 'rgba(0,0,0,0.55)',
+  axisX: 'rgba(190,30,30,0.65)',
+  axisXText: 'rgba(190,30,30,0.85)',
+  axisY: 'rgba(15,150,50,0.65)',
+  axisYText: 'rgba(15,150,50,0.85)',
+  overlayBg: 'rgba(255,255,255,0.80)',
+  overlayText: 'rgb(50,55,70)',
+  scaleStroke: 'rgb(50,55,70)',
+  sensorLabel: 'rgba(40,45,60,0.85)',
+  sensorStroke: 'rgba(30,30,30,0.6)',
+}
+
+const DARK_COLORS = {
+  bg: 'rgb(20, 22, 33)',
+  gridMinor: 'rgba(255,255,255,0.03)',
+  gridMajor: 'rgba(255,255,255,0.08)',
+  ring: 'rgba(255,255,255,0.1)',
+  ringText: 'rgba(255,255,255,0.4)',
+  axisX: 'rgba(239,68,68,0.4)',
+  axisXText: 'rgba(239,68,68,0.6)',
+  axisY: 'rgba(34,197,94,0.4)',
+  axisYText: 'rgba(34,197,94,0.6)',
+  overlayBg: 'rgba(0,0,0,0.6)',
+  overlayText: 'rgb(156,163,175)',
+  scaleStroke: 'white',
+  sensorLabel: 'rgb(209,213,219)',
+  sensorStroke: 'white',
+}
+
 export interface ViewState {
   zoom: number
   panX: number
@@ -37,6 +71,8 @@ interface SensorVisualizationProps {
   selection?: SelectionType
   pixelsPerMeter?: number
   onViewStateChange?: (state: ViewState) => void
+  colorScheme?: 'light' | 'dark'
+  maxRange?: number
 }
 
 function createFovPath(
@@ -104,7 +140,10 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
   selection,
   pixelsPerMeter: initialPPM = 4,
   onViewStateChange,
+  colorScheme,
+  maxRange = 150,
 }, ref) {
+  const c = colorScheme === 'light' ? LIGHT_COLORS : DARK_COLORS
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const [draggingSensor, setDraggingSensor] = useState<string | null>(null)
@@ -125,8 +164,11 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
   // Scale: pixels per meter
   const ppm = initialPPM * zoom
 
-  // Distance rings (in meters)
-  const distanceRings = [25, 50, 75, 100, 125, 150]
+  // Distance rings (in meters) — 25m interval up to maxRange
+  const distanceRings = useMemo(
+    () => Array.from({ length: Math.floor(maxRange / 25) }, (_, i) => (i + 1) * 25),
+    [maxRange]
+  )
 
   // Expose reset and view state methods
   useImperativeHandle(ref, () => ({
@@ -531,7 +573,7 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
                 cy={sensorSvg.y}
                 r={pointRadius}
                 fill={alive ? colors.stroke : 'rgb(239, 68, 68)'}
-                stroke={isSelected ? 'rgb(251, 191, 36)' : 'white'}
+                stroke={isSelected ? 'rgb(251, 191, 36)' : c.sensorStroke}
                 strokeWidth={isSelected ? 2 : 1.5}
                 className="transition-all duration-150"
               />
@@ -559,7 +601,7 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
               x={sensorSvg.x}
               y={sensorSvg.y - pointRadius - 8}
               textAnchor="middle"
-              fill={isSelected ? 'rgb(251, 191, 36)' : alive ? 'rgb(209, 213, 219)' : 'rgb(239, 68, 68)'}
+              fill={isSelected ? 'rgb(251, 191, 36)' : alive ? c.sensorLabel : 'rgb(239, 68, 68)'}
               fontSize={Math.max(8, 11 / Math.sqrt(zoom))}
               fontWeight={isSelected ? 700 : 500}
               className="transition-colors duration-150 select-none pointer-events-none"
@@ -570,7 +612,7 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
         </g>
       )
     })
-  }, [sensors, sensorStatus, selectedSensorId, worldToSvg, handleSensorMouseDown, onSensorDrag, draggingSensor, zoom, globalDisplay])
+  }, [sensors, sensorStatus, selectedSensorId, worldToSvg, handleSensorMouseDown, onSensorDrag, draggingSensor, zoom, globalDisplay, c])
 
   // Distance rings - centered at baselink (origin)
   const ringElements = useMemo(() => {
@@ -585,7 +627,7 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
             cy={baselinkSvg.y}
             r={radiusPx}
             fill="none"
-            stroke="rgba(255,255,255,0.1)"
+            style={{ stroke: c.ring }}
             strokeWidth={1}
           />
           {/* Distance label - 4 positions */}
@@ -599,7 +641,7 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
                 x={labelX}
                 y={labelY - 4}
                 textAnchor="middle"
-                fill="rgba(255,255,255,0.4)"
+                style={{ fill: c.ringText }}
                 fontSize={10}
                 className="select-none pointer-events-none"
               >
@@ -610,12 +652,12 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
         </g>
       )
     })
-  }, [worldToSvg, metersToPixels, distanceRings])
+  }, [worldToSvg, metersToPixels, distanceRings, c])
 
   // Coordinate axes - centered at baselink (origin)
   const axesElements = useMemo(() => {
     const baselinkSvg = worldToSvg(0, 0)  // Baselink is always at origin
-    const axisLength = metersToPixels(180)
+    const axisLength = metersToPixels(maxRange + 20)
     
     return (
       <g>
@@ -625,14 +667,14 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
           y1={baselinkSvg.y}
           x2={baselinkSvg.x}
           y2={baselinkSvg.y - axisLength}
-          stroke="rgba(239, 68, 68, 0.4)"
+          style={{ stroke: c.axisX }}
           strokeWidth={1}
           strokeDasharray="8 4"
         />
         <text
           x={baselinkSvg.x + 8}
           y={baselinkSvg.y - axisLength + 20}
-          fill="rgba(239, 68, 68, 0.6)"
+          style={{ fill: c.axisXText }}
           fontSize={12}
           fontWeight="bold"
           className="select-none pointer-events-none"
@@ -646,14 +688,14 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
           y1={baselinkSvg.y}
           x2={baselinkSvg.x - axisLength}
           y2={baselinkSvg.y}
-          stroke="rgba(34, 197, 94, 0.4)"
+          style={{ stroke: c.axisY }}
           strokeWidth={1}
           strokeDasharray="8 4"
         />
         <text
           x={baselinkSvg.x - axisLength + 10}
           y={baselinkSvg.y - 8}
-          fill="rgba(34, 197, 94, 0.6)"
+          style={{ fill: c.axisYText }}
           fontSize={12}
           fontWeight="bold"
           className="select-none pointer-events-none"
@@ -662,13 +704,13 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
         </text>
       </g>
     )
-  }, [worldToSvg, metersToPixels])
+  }, [worldToSvg, metersToPixels, c, maxRange])
 
   return (
     <div 
       ref={containerRef}
-      className="w-full h-full overflow-hidden rounded-lg bg-background"
-      style={{ cursor: isPanning ? 'grabbing' : 'default' }}
+      className="w-full h-full overflow-hidden rounded-lg"
+      style={{ cursor: isPanning ? 'grabbing' : 'default', backgroundColor: c.bg }}
     >
       <svg
         ref={svgRef}
@@ -690,7 +732,7 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
             <path
               d={`M ${metersToPixels(10)} 0 L 0 0 0 ${metersToPixels(10)}`}
               fill="none"
-              stroke="rgba(255,255,255,0.03)"
+              style={{ stroke: c.gridMinor }}
               strokeWidth="1"
             />
           </pattern>
@@ -704,7 +746,7 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
             <path
               d={`M ${metersToPixels(50)} 0 L 0 0 0 ${metersToPixels(50)}`}
               fill="none"
-              stroke="rgba(255,255,255,0.08)"
+              style={{ stroke: c.gridMajor }}
               strokeWidth="1"
             />
           </pattern>
@@ -735,13 +777,13 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
             width={110}
             height={30}
             rx={4}
-            fill="rgba(0,0,0,0.6)"
+            style={{ fill: c.overlayBg }}
           />
           <text
             x={55}
             y={20}
             textAnchor="middle"
-            fill="rgb(156, 163, 175)"
+            style={{ fill: c.overlayText }}
             fontSize={11}
             className="select-none pointer-events-none"
           >
@@ -757,23 +799,23 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
             width={metersToPixels(50) + 20}
             height={30}
             rx={4}
-            fill="rgba(0,0,0,0.6)"
+            style={{ fill: c.overlayBg }}
           />
           <line
             x1={10}
             y1={15}
             x2={10 + metersToPixels(50)}
             y2={15}
-            stroke="white"
+            style={{ stroke: c.scaleStroke }}
             strokeWidth={2}
           />
-          <line x1={10} y1={10} x2={10} y2={20} stroke="white" strokeWidth={2} />
-          <line x1={10 + metersToPixels(50)} y1={10} x2={10 + metersToPixels(50)} y2={20} stroke="white" strokeWidth={2} />
+          <line x1={10} y1={10} x2={10} y2={20} style={{ stroke: c.scaleStroke }} strokeWidth={2} />
+          <line x1={10 + metersToPixels(50)} y1={10} x2={10 + metersToPixels(50)} y2={20} style={{ stroke: c.scaleStroke }} strokeWidth={2} />
           <text
             x={10 + metersToPixels(25)}
             y={26}
             textAnchor="middle"
-            fill="white"
+            style={{ fill: c.scaleStroke }}
             fontSize={10}
             className="select-none pointer-events-none"
           >
@@ -789,12 +831,12 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
             width={200}
             height={48}
             rx={4}
-            fill="rgba(0,0,0,0.6)"
+            style={{ fill: c.overlayBg }}
           />
-          <text x={10} y={18} fill="rgb(156, 163, 175)" fontSize={10} className="select-none pointer-events-none">
+          <text x={10} y={18} style={{ fill: c.overlayText }} fontSize={10} className="select-none pointer-events-none">
             Scroll: Zoom | Shift+Drag: Pan
           </text>
-          <text x={10} y={36} fill="rgb(156, 163, 175)" fontSize={10} className="select-none pointer-events-none">
+          <text x={10} y={36} style={{ fill: c.overlayText }} fontSize={10} className="select-none pointer-events-none">
             Click sensor/car: Edit | Drag: Move
           </text>
         </g>
