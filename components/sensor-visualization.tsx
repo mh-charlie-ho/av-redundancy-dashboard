@@ -154,6 +154,8 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
   const [pan, setPan] = useState({ x: initialViewState?.panX ?? 0, y: initialViewState?.panY ?? 0 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+  // Touch gesture state stored in a ref to avoid stale closures in event listeners
+  const touchRef = useRef<{ lastX: number; lastY: number; lastDist: number } | null>(null)
 
   // SVG dimensions
   const width = 1200
@@ -228,6 +230,65 @@ export const SensorVisualization = forwardRef<SensorVisualizationHandle, SensorV
     }
     container.addEventListener('wheel', onWheel, { passive: false })
     return () => container.removeEventListener('wheel', onWheel)
+  }, [])
+
+  // Touch gesture: single-finger pan, two-finger pinch-to-zoom (view only, no object interaction)
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault()
+      if (e.touches.length === 1) {
+        touchRef.current = { lastX: e.touches[0].clientX, lastY: e.touches[0].clientY, lastDist: 0 }
+      } else if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX
+        const dy = e.touches[0].clientY - e.touches[1].clientY
+        const dist = Math.hypot(dx, dy)
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2
+        touchRef.current = { lastX: midX, lastY: midY, lastDist: dist }
+      }
+    }
+
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault()
+      if (!touchRef.current) return
+
+      if (e.touches.length === 1) {
+        const dx = e.touches[0].clientX - touchRef.current.lastX
+        const dy = e.touches[0].clientY - touchRef.current.lastY
+        setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }))
+        touchRef.current = { lastX: e.touches[0].clientX, lastY: e.touches[0].clientY, lastDist: 0 }
+      } else if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX
+        const dy = e.touches[0].clientY - e.touches[1].clientY
+        const dist = Math.hypot(dx, dy)
+        if (touchRef.current.lastDist > 0) {
+          const scale = dist / touchRef.current.lastDist
+          setZoom(prev => Math.max(0.2, Math.min(5, prev * scale)))
+        }
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2
+        const dmx = midX - touchRef.current.lastX
+        const dmy = midY - touchRef.current.lastY
+        setPan(prev => ({ x: prev.x + dmx, y: prev.y + dmy }))
+        touchRef.current = { lastX: midX, lastY: midY, lastDist: dist }
+      }
+    }
+
+    const onTouchEnd = () => {
+      touchRef.current = null
+    }
+
+    container.addEventListener('touchstart', onTouchStart, { passive: false })
+    container.addEventListener('touchmove', onTouchMove, { passive: false })
+    container.addEventListener('touchend', onTouchEnd)
+    return () => {
+      container.removeEventListener('touchstart', onTouchStart)
+      container.removeEventListener('touchmove', onTouchMove)
+      container.removeEventListener('touchend', onTouchEnd)
+    }
   }, [])
 
   // Handle pan

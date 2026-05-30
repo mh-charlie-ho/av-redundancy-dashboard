@@ -15,7 +15,7 @@ import {
   type SelectionType,
 } from '@/lib/sensor-config'
 import { Button } from '@/components/ui/button'
-import { Download, Upload, Loader2, RotateCcw, Sun, Moon } from 'lucide-react'
+import { Download, Upload, Loader2, RotateCcw, Sun, Moon, Settings } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
 // Global display settings type
@@ -83,6 +83,7 @@ export default function AVRedundancyDashboard() {
   const [savedViewState, setSavedViewState] = useState<ViewState | null>(null)
   const [globalDisplay, setGlobalDisplay] = useState<GlobalDisplaySettings>(defaultGlobalDisplay)
   const [maxRange, setMaxRange] = useState(150)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const { theme, setTheme } = useTheme()
 
@@ -336,7 +337,7 @@ export default function AVRedundancyDashboard() {
                 variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-xs"
+                className="text-xs hidden sm:flex"
               >
                 <Upload className="h-3.5 w-3.5 mr-1.5" />
                 Import
@@ -345,7 +346,7 @@ export default function AVRedundancyDashboard() {
                 variant="outline"
                 size="sm"
                 onClick={handleExport}
-                className="text-xs"
+                className="text-xs hidden sm:flex"
               >
                 <Download className="h-3.5 w-3.5 mr-1.5" />
                 Export
@@ -354,7 +355,7 @@ export default function AVRedundancyDashboard() {
                 variant="outline"
                 size="sm"
                 onClick={handleResetToDefault}
-                className="text-xs"
+                className="text-xs hidden sm:flex"
               >
                 <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
                 Reset
@@ -368,10 +369,20 @@ export default function AVRedundancyDashboard() {
               >
                 {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
               </Button>
+              {/* Settings button — only visible on small screens */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSettingsOpen(true)}
+                className="text-xs lg:hidden"
+                aria-label="Open settings"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
             </div>
-            
+
             {/* System status */}
-            <div className="flex items-center gap-3 pl-4 border-l border-border">
+            <div className="hidden sm:flex items-center gap-3 pl-4 border-l border-border">
               <span className="text-sm text-muted-foreground">System:</span>
               <span className={`text-lg font-bold ${getStatusColor()}`}>
                 {ratio >= 0.8 ? 'NORMAL' : ratio >= 0.4 ? 'DEGRADED' : 'CRITICAL'}
@@ -383,7 +394,7 @@ export default function AVRedundancyDashboard() {
 
       {/* Main Content - Horizontal Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Visualization Area - always dark regardless of theme */}
+        {/* Visualization Area */}
         <div className="flex-1 p-4">
           <div className="w-full h-full rounded-xl border border-border overflow-hidden">
             <SensorVisualization
@@ -404,8 +415,8 @@ export default function AVRedundancyDashboard() {
           </div>
         </div>
 
-        {/* Control Panel - Fixed width on right */}
-        <div className="w-80 flex-shrink-0 border-l border-border p-4 bg-card/50 overflow-hidden">
+        {/* Control Panel - desktop: static sidebar, mobile: hidden */}
+        <div className="hidden lg:flex w-80 flex-shrink-0 border-l border-border p-4 bg-card/50 overflow-hidden">
           <SensorControlPanel
             sensors={sensors}
             sensorStatus={sensorStatus}
@@ -428,6 +439,48 @@ export default function AVRedundancyDashboard() {
             onSensorsReorder={handleSensorsReorder}
             maxRange={maxRange}
             onMaxRangeChange={setMaxRange}
+          />
+        </div>
+      </div>
+
+      {/* Mobile drawer backdrop */}
+      {isSettingsOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setIsSettingsOpen(false)}
+        />
+      )}
+
+      {/* Mobile settings drawer */}
+      <div
+        className={`fixed inset-y-0 right-0 z-50 w-80 flex flex-col border-l border-border bg-card/95 backdrop-blur-sm transition-transform duration-300 lg:hidden ${
+          isSettingsOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex-1 flex flex-col p-4 overflow-hidden">
+          <SensorControlPanel
+            sensors={sensors}
+            sensorStatus={sensorStatus}
+            selection={selection}
+            carDimensions={carDimensions}
+            carOffset={carOffset}
+            viewState={viewState}
+            globalDisplay={globalDisplay}
+            onToggle={handleToggle}
+            onCarDimensionsChange={setCarDimensions}
+            onCarOffsetChange={setCarOffset}
+            onSensorUpdate={handleSensorUpdate}
+            onSensorAdd={handleSensorAdd}
+            onSensorDelete={handleSensorDelete}
+            onDeleteAllSensors={handleDeleteAllSensors}
+            onSelectionChange={handleSelectionChange}
+            onResetView={handleResetView}
+            onCenterView={handleCenterView}
+            onGlobalDisplayChange={handleGlobalDisplayChange}
+            onSensorsReorder={handleSensorsReorder}
+            maxRange={maxRange}
+            onMaxRangeChange={setMaxRange}
+            onClose={() => setIsSettingsOpen(false)}
           />
         </div>
       </div>
